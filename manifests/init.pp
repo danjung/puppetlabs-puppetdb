@@ -132,6 +132,25 @@ class puppetdb (
   }
 
   if ($database == 'postgres') {
+    if (hiera('puppetdb_data_dir_mount', 'false') == 'true') {
+      $puppetdb_data_dir        = hiera('puppetdb_data_dir')
+      $puppetdb_data_dir_device = hiera('puppetdb_data_dir_device')
+
+      file { "$puppetdb_data_dir" :
+        owner  => 'postgres',
+        group  => 'postgres',
+        ensure => directory,
+      }
+      mount { $puppetdb_data_dir :
+        ensure  => 'mounted',
+        atboot  => true,
+        fstype  => 'ext4',
+        device  => $puppetdb_data_dir_device,
+        options => 'defaults',
+        require => File[$puppetdb_data_dir]
+      }
+    }
+    
     class { '::puppetdb::database::postgresql':
       listen_addresses    => $database_listen_address,
       database_name       => $database_name,
