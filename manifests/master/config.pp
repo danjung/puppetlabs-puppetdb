@@ -30,8 +30,10 @@ class puppetdb::master::config (
   $restart_puppet              = true,
 ) inherits puppetdb::params {
 
-  package { $terminus_package:
-    ensure => $puppetdb_version,
+  if ! defined(Package["$terminus_package"]) {
+    package { $terminus_package:
+      ensure => $puppetdb_version,
+    }
   }
 
   if ($strict_validation) {
