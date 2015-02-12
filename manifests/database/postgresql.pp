@@ -8,6 +8,7 @@ class puppetdb::database::postgresql(
   $manage_server        = $puppetdb::params::manage_dbserver,
   $manage_package_repo  = $puppetdb::params::manage_pg_repo,
   $postgres_version     = $puppetdb::params::postgres_version,
+  $datadir              = '/var/lib/pgsql/data',
 ) inherits puppetdb::params {
 
   if $manage_server {
@@ -21,6 +22,8 @@ class puppetdb::database::postgresql(
     class { '::postgresql::server':
       ip_mask_allow_all_users => '0.0.0.0/0',
       listen_addresses        => $listen_addresses,
+      datadir                 => $datadir,
+      confdir                 => $datadir,
     }
   }
 
