@@ -132,22 +132,29 @@ class puppetdb (
   }
 
   if ($database == 'postgres') {
+    $puppetdb_data_dir = hiera('puppetdb_data_dir','/var/lib/pgsql/data')
+    file { '/etc/sysconfig/pgsql/postgresql' :
+      ensure  => 'present',
+      content => "PGDATA=$puppetdb_data_dir",
+      before  => Package['postgresql-server'],
+    }
+    
     if (hiera('puppetdb_data_dir_mount', 'false') == 'true') {
-      $puppetdb_data_dir        = hiera('puppetdb_data_dir')
       $puppetdb_data_dir_device = hiera('puppetdb_data_dir_device')
+      $puppetdb_data_mount_point = hiera('puppetdb_data_mount_point')
 
-      file { "$puppetdb_data_dir" :
+      file { "$puppetdb_data_mount_point" :
         owner  => 'postgres',
         group  => 'postgres',
         ensure => directory,
       }
-      mount { $puppetdb_data_dir :
+      mount { $puppetdb_data_mount_point :
         ensure  => 'mounted',
         atboot  => true,
         fstype  => 'ext4',
         device  => $puppetdb_data_dir_device,
         options => 'defaults',
-        require => File[$puppetdb_data_dir]
+        require => File[$puppetdb_data_mount_point]
       }
     }
     
@@ -159,6 +166,8 @@ class puppetdb (
       manage_server       => $manage_dbserver,
       manage_package_repo => $manage_package_repo,
       postgres_version    => $postgres_version,
+      datadir             => $puppetdb_data_dir,
+      require             => File["$puppetdb_data_dir"],
       before              => [Class['::puppetdb::server'], Class['::puppetdb::server::validate_db']],
     }
   }
