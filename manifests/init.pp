@@ -61,17 +61,6 @@ class puppetdb (
   $java_args                = $puppetdb::params::java_args,
   $max_threads              = $puppetdb::params::max_threads,
 ) inherits puppetdb::params {
-
-  class { 'puppetdb::master::config':
-    puppetdb_server         => hiera('puppetdb_host'),
-    puppetdb_port           => hiera('puppetdb_port'),
-    enable_reports          => true,
-    manage_report_processor => false,
-    manage_routes           => false,
-    manage_storeconfigs     => false,
-    restart_puppet          => false,
-    strict_validation       => false,
-  }
   
   class { '::puppetdb::server':
     listen_address            => $listen_address,
