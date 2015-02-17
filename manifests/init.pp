@@ -171,4 +171,23 @@ class puppetdb (
       before              => [Class['::puppetdb::server'], Class['::puppetdb::server::validate_db']],
     }
   }
+    
+  package { 'gunicorn' :
+    provider => 'pip',
+  }    
+
+  package { 'puppetboard' :
+    provider => 'pip',
+  }
+
+  $puppetboard_proxy_url = hiera('puppetboard_proxy_url')
+  file { '/etc/init.d/puppetboard' :
+    content => template("puppetdb/etc/init.d/puppetboard.erb"),
+  }
+  
+  service { 'puppetboard' :
+    enable  => true,
+    ensure  => 'running',
+    require => File['/etc/init.d/puppetboard'], 
+  }
 }
