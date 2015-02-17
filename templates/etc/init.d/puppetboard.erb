@@ -1,0 +1,105 @@
+#!/bin/sh
+#
+# puppetboard Daemon for Puppet
+#
+# chkconfig: - 20 80
+# description:puppetboard Daemon for Puppet
+
+### BEGIN INIT INFO
+# Provides:          puppetboard
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: puppetboard
+# Description:       Start puppetboard daemon placed in /etc/init.d.
+### END INIT INFO
+
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+prog="puppetboard"
+
+##############################################################
+#  You should not have to edit this init script.             #
+#  Please attempt to make changes in /etc/sysconfig/puppetdb #
+##############################################################
+
+[[ -e /etc/sysconfig/$prog ]] && . /etc/sysconfig/$prog
+USER=puppetdb
+
+config=$CONFIG
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+EXEC="gunicorn --log-syslog-prefix puppetboard -b <%= @puppetboard_proxy_url %> puppetboard.app:app"
+PIDFILE="/var/run/$prog/$prog"
+
+if `which runuser &> /dev/null` ; then
+  SU=runuser
+  else
+  SU=su
+fi
+
+find_my_pid() {
+  if [[ ! -d  "/var/run/$prog" ]] ; then
+    mkdir -p /var/run/$prog
+    chown -R $USER:$USER /var/run/$prog
+  fi
+  pid=$(ps -ef | grep /usr/bin/gunicorn | grep python | awk '{print $2}' | head -n 1)
+  if [[ -n $pid ]]; then  
+    echo "puppetboard ($pid)"
+    return 0
+  else
+    echo "puppetboard is not running"
+    return 1
+  fi
+}
+
+start() {
+  # call status here and figure out current state
+  daemon --user $USER --pidfile $PIDFILE "$EXEC >> /var/log/puppetdb/puppetdb-daemon.log 2>&1 &"
+  sleep 1
+  find_my_pid
+  echo $pid > $PIDFILE
+  [[ -s $PIDFILE ]] && success $"$base startup" || failure $"$base startup"
+  echo
+  return $retval
+}
+
+stop() {
+  echo -n $"Stopping $prog: "
+  find_my_pid
+if [[ -s "$PIDFILE" ]] ; then
+  kill `cat $PIDFILE`
+elif [[ "$pid" != "" ]] ; then
+  kill $pid
+fi
+  retval=$?
+  [[ $retval -eq 0 ]] && success $"$base stopped" || failure $"$base stopped"
+  echo
+  [[ $retval -eq 0 ]] && rm -f $lockfile $PIDFILE
+  return $retval
+}
+
+restart() {
+  stop
+  start
+}
+
+case "$1" in
+  start)
+    $1
+    ;;
+  stop)
+    $1
+    ;;
+  restart)
+    $1
+    ;;
+  status)
+    find_my_pid
+    ;;
+  *)
+  echo $"Usage: $0 {start|stop|status|restart}"
+  exit 2
+esac
+exit $?

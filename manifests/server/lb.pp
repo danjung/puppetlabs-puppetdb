@@ -14,10 +14,6 @@ class puppetdb::server::lb() inherits bioiq_common::puppetdb::params {
     unless => "getsebool 'httpd_can_network_relay' | awk '{ print \$3 }' | grep on",
   }
 
-  package { 'gunicorn' :
-    provider => 'pip',
-  }
-
   $main_vhost_name = hiera('http_server_names')
 
   # Rewrite non-ssl to ssl
@@ -58,7 +54,7 @@ class puppetdb::server::lb() inherits bioiq_common::puppetdb::params {
     require              => Class['bioiq_common::lb::ssl'],
   }
 
-  # listen for puppetdb reports
+  # For puppetdb performance metrics report
   nginx::resource::vhost { "puppetdb-${main_vhost_name}" :
     ensure               => present,
     listen_port          => hiera('puppetdb_port'),
@@ -71,6 +67,36 @@ class puppetdb::server::lb() inherits bioiq_common::puppetdb::params {
     server_name          => $main_vhost_name,
     proxy                => hiera('puppetdb_proxy_url'),
     location_template    => $puppetdb_proxy_template,
+    blocked_agents       => $http_blocked_agents,
+    require              => Class['bioiq_common::lb::ssl'],
+  }
+
+  $puppetboard_vhost_name = ["test-puppetboard.bioiq.com"]
+  
+  # http for puppetboard
+  nginx::resource::vhost { $puppetboard_vhost_name :
+    ensure             => present,
+    listen_port        => hiera('http_port'),
+    ipv6_enable        => $ipv6_enable,
+    ipv6_listen_port   => hiera('http_port'),
+    server_name        => $puppetboard_vhost_name,
+    www_root           => "/usr/share/nginx",
+    rewrite            => $rewrite,
+  }
+
+  # For puppetboard reports
+  nginx::resource::vhost { "puppetboard-${puppetboard_vhost_name}" :
+    ensure               => present,
+    listen_port          => hiera('http_ssl_port'),
+    ipv6_enable          => $ipv6_enable,
+    ipv6_listen_port     => hiera('http_ssl_port'),
+    ssl                  => true,
+    ssl_port             => hiera('http_ssl_port'),
+    ssl_cert             => $bioiq_common::lb::ssl::ssl_cert_path,
+    ssl_key              => $bioiq_common::lb::ssl::ssl_cert_key_path,
+    server_name          => $puppetboard_vhost_name,
+    proxy                => hiera('puppetboard_proxy_url'),
+    location_template    => $puppetboard_proxy_template,
     blocked_agents       => $http_blocked_agents,
     require              => Class['bioiq_common::lb::ssl'],
   }
