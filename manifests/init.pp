@@ -122,6 +122,11 @@ class puppetdb (
 
   if ($database == 'postgres') {
     $puppetdb_data_dir = hiera('puppetdb_data_dir','/var/lib/pgsql/data')
+    
+    file { '/etc/sysconfig/pgsql' :
+      ensure  => 'directory',
+    }
+    
     file { '/etc/sysconfig/pgsql/postgresql' :
       ensure  => 'present',
       content => "PGDATA=$puppetdb_data_dir",
@@ -172,6 +177,7 @@ class puppetdb (
   $puppetboard_proxy_url = hiera('puppetboard_proxy_url')
   file { '/etc/init.d/puppetboard' :
     content => template("puppetdb/etc/init.d/puppetboard.erb"),
+    mode    => 0755, 
   }
   
   service { 'puppetboard' :

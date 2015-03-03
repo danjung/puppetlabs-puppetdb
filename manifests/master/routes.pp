@@ -23,6 +23,10 @@ class puppetdb::master::routes (
         'facts'   => {
           'terminus' => 'facter',
           'cache'    => 'puppetdb_apply',
+        },
+        'resource' => {
+          'terminus' => 'ral',
+          'cache'    => 'puppetdb',
         }
       }
     }
