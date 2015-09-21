@@ -70,6 +70,10 @@ class puppetdb::server::lb() inherits bioiq_common::puppetdb::params {
     proxy                => hiera('puppetdb_proxy_url'),
     proxy_read_timeout   => 10,
     location_template    => $puppetdb_proxy_template,
+    location_cfg_prepend => [
+      "client_max_body_size 50M",
+      "proxy_next_upstream error"
+    ],
     blocked_agents       => $http_blocked_agents,
     require              => Class['bioiq_common::lb::ssl'],
   }
